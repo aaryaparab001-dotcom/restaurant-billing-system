@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Restaurant Billing System</title>
+  <style>
+    :root{
+      --bg:#0f172a;
+      --panel:#111827;
+      --panel-2:#1f2937;
+      --muted:#94a3b8;
+      --text:#f8fafc;
+      --border:#334155;
+      --primary:#22c55e;
+      --primary-2:#16a34a;
+      --danger:#ef4444;
+      --warning:#f59e0b;
+      --info:#3b82f6;
+      --paid:#8b5cf6;
+      --available:#10b981;
+      --occupied:#f97316;
+      --billing:#0ea5e9;
+      --shadow:0 10px 30px rgba(0,0,0,.25);
+      --radius:18px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-gradient(135deg,#0b1220,#111827 50%,#0b1220);color:var(--text)}
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer;border:none}
+    .app{display:grid;grid-template-columns:320px 1fr 400px;gap:16px;padding:16px;min-height:100vh}
+    .panel{
+      background:rgba(17,24,39,.95);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(8px);
+    }
+    .panel-header{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px 16px;border-bottom:1px solid var(--border);
+      background:rgba(255,255,255,.02)
+    }
+    .panel-header h2,.panel-header h3{margin:0;font-size:18px}
+    .panel-body{padding:14px 16px}
+    .brand{
+      display:flex;align-items:center;gap:12px
+    }
+    .brand-badge{
+      width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--primary),var(--info));
+      display:grid;place-items:center;font-weight:800;color:#fff;letter-spacing:.5px
+    }
+    .brand small{color:var(--muted)}
+    .btn{
+      padding:10px 14px;border-radius:12px;background:#243041;color:#fff;border:1px solid var(--border);
+      transition:.2s transform,.2s background,.2s border;
+    }
+    .btn:hover{transform:translateY(-1px);background:#2e3b4f}
+    .btn.primary{background:linear-gradient(135deg,var(--primary),var(--primary-2));border:none}
+    .btn.primary:hover{filter:brightness(1.05)}
+    .btn.info{background:linear-gradient(135deg,#2563eb,#0ea5e9);border:none}
+    .btn.warn{background:linear-gradient(135deg,#f59e0b,#f97316);border:none}
+    .btn.danger{background:linear-gradient(135deg,#ef4444,#dc2626);border:none}
+    .btn.ghost{background:transparent}
+    .btn.sm{padding:8px 10px;border-radius:10px;font-size:13px}
+    .btn.block{width:100%}
+    .btn-row{display:flex;gap:8px;flex-wrap:wrap}
+    .muted{color:var(--muted)}
+    .tiny{font-size:12px}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+    .field label{font-size:13px;color:#cbd5e1}
+    .input, .select, .textarea{
+      width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);outline:none;
+      background:#0b1220;color:#fff;
+    }
+    .textarea{min-height:74px;resize:vertical}
+    .pill{
+      display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:12px;
+      background:#1e293b;border:1px solid var(--border);color:#e2e8f0
+    }
+
+    /* TABLES */
+    .table-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    .table-grid{
+      display:grid;grid-template-columns:repeat(2,1fr);gap:12px
+    }
+    .table-card{
+      border:1px solid var(--border);border-radius:18px;padding:14px;background:#0b1220;
+      transition:.2s transform,.2s border,.2s box-shadow;position:relative
+    }
+    .table-card:hover{transform:translateY(-2px)}
+    .table-card.active{border-color:#60a5fa;box-shadow:0 0 0 2px rgba(96,165,250,.18)}
+    .table-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .table-name{font-weight:700}
+    .status-dot{width:10px;height:10px;border-radius:50%}
+    .status-available{background:var(--available)}
+    .status-occupied{background:var(--occupied)}
+    .status-billing{background:var(--billing)}
+    .status-paid{background:var(--paid)}
+    .table-meta{font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+    .table-total{font-weight:700;margin-top:10px;font-size:15px}
+
+    /* MENU CENTER */
+    .top-controls{display:grid;grid-template-columns:1.1fr .7fr .7fr auto auto;gap:10px;margin-bottom:12px}
+    .tabs{display:flex;gap:8px;overflow:auto;padding-bottom:4px;margin-bottom:12px}
+    .tab{
+      padding:9px 12px;border-radius:999px;background:#0b1220;border:1px solid var(--border);
+      white-space:nowrap
+    }
+    .tab.active{background:linear-gradient(135deg,#2563eb,#0ea5e9);border:none}
+    .subtabs{display:flex;gap:8px;overflow:auto;padding-bottom:4px;margin-bottom:12px}
+    .subtab{
+      padding:7px 10px;border-radius:999px;background:#111827;border:1px solid var(--border);
+      white-space:nowrap;font-size:13px
+    }
+    .subtab.active{background:linear-gradient(135deg,#22c55e,#16a34a);border:none}
+    .menu-grid{
+      display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px
+    }
+    .item-card{
+      background:#0b1220;border:1px solid var(--border);border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:8px
+    }
+    .item-top{display:flex;justify-content:space-between;gap:10px}
+    .item-name{font-weight:700;line-height:1.35}
+    .item-tags{display:flex;gap:6px;flex-wrap:wrap}
+    .tag{
+      font-size:11px;padding:4px 8px;border-radius:999px;border:1px solid var(--border);background:#172033;color:#e2e8f0
+    }
+    .tag.veg{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.35)}
+    .tag.nonveg{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.35)}
+    .tag.out{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.35)}
+    .price{font-size:18px;font-weight:800}
+    .item-actions{display:flex;gap:8px;justify-content:space-between;align-items:center}
+    .quick-notes{
+      display:flex;gap:6px;flex-wrap:wrap
+    }
+    .chip{
+      padding:6px 8px;font-size:11px;border-radius:999px;background:#182235;border:1px solid var(--border)
+    }
+
+    /* BILL */
+    .order-head{
+      display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px
+    }
+    .order-list{
+      max-height:320px;overflow:auto;border:1px solid var(--border);border-radius:16px;background:#0b1220
+    }
+    .order-item{
+      padding:12px;border-bottom:1px solid #1f2937
+    }
+    .order-item:last-child{border-bottom:none}
+    .order-row{
+      display:flex;justify-content:space-between;gap:8px
+    }
+    .order-name{font-weight:700}
+    .qty-box{
+      display:flex;align-items:center;gap:6px
+    }
+    .icon-btn{
+      width:28px;height:28px;border-radius:8px;background:#1e293b;border:1px solid var(--border);color:#fff
+    }
+    .note{
+      font-size:12px;color:#cbd5e1;margin-top:6px;background:#111827;padding:6px 8px;border-radius:10px
+    }
+    .summary{
+      margin-top:12px;border:1px solid var(--border);border-radius:16px;background:#0b1220;padding:12px
+    }
+    .sum-row{display:flex;justify-content:space-between;margin:8px 0;color:#e2e8f0}
+    .sum-row.total{
+      font-size:20px;font-weight:800;padding-top:10px;border-top:1px dashed var(--border);margin-top:12px
+    }
+    .split-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+    .recent-bills{
+      margin-top:12px;border:1px solid var(--border);border-radius:16px;background:#0b1220;padding:10px
+    }
+    .recent-item{
+      display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #1f2937;font-size:13px
+    }
+    .recent-item:last-child{border-bottom:none}
+
+    /* MODAL */
+    .overlay{
+      position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:16px
+    }
+    .overlay.show{display:flex}
+    .modal{
+      width:min(900px,100%);max-height:90vh;overflow:auto;background:#0f172a;border:1px solid var(--border);
+      border-radius:22px;box-shadow:var(--shadow)
+    }
+    .modal-header{
+      display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid var(--border)
+    }
+    .modal-body{padding:16px}
+    .settings-columns{display:grid;grid-template-columns:1.05fr .95fr;gap:16px}
+    .list-box{
+      border:1px solid var(--border);border-radius:16px;background:#0b1220;padding:12px;max-height:420px;overflow:auto
+    }
+    .list-item{
+      display:grid;grid-template-columns:1.4fr 1fr auto auto auto;gap:8px;align-items:center;
+      padding:10px 0;border-bottom:1px solid #1f2937
+    }
+    .list-item:last-child{border-bottom:none}
+    .category-row{
+      display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;
+      padding:10px 0;border-bottom:1px solid #1f2937
+    }
+    .category-row:last-child{border-bottom:none}
+    .switch{
+      display:flex;align-items:center;gap:8px;font-size:13px
+    }
+    .toggle{
+      appearance:none;width:42px;height:24px;border-radius:999px;background:#334155;position:relative;cursor:pointer;transition:.2s
+    }
+    .toggle:checked{background:linear-gradient(135deg,#22c55e,#16a34a)}
+    .toggle::after{
+      content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:white;transition:.2s
+    }
+    .toggle:checked::after{left:21px}
+    .kitchen-ticket{
+      border:1px dashed var(--border);border-radius:16px;padding:12px;background:#0b1220
+    }
+
+    /* RECEIPT */
+    .receipt{
+      width:320px;max-width:100%;margin:0 auto;background:#fff;color:#111;padding:16px;border-radius:12px
+    }
+    .receipt h2,.receipt h3,.receipt p{margin:4px 0}
+    .receipt hr{border:none;border-top:1px dashed #aaa;margin:10px 0}
+    .receipt table{width:100%;border-collapse:collapse;font-size:12px}
+    .receipt th,.receipt td{text-align:left;padding:4px 0;vertical-align:top}
+    .receipt .right{text-align:right}
+
+    /* RESPONSIVE */
+    @media (max-width:1200px){
+      .app{grid-template-columns:280px 1fr 360px}
+    }
+    @media (max-width:980px){
+      .app{grid-template-columns:1fr}
+      .panel{min-height:auto}
+      .top-controls{grid-template-columns:1fr 1fr}
+      .settings-columns{grid-template-columns:1fr}
+    }
+    @media print{
+      body *{visibility:hidden}
+      #printArea, #printArea *{visibility:visible}
+      #printArea{position:absolute;left:0;top:0;width:100%;padding:20px;background:white}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- LEFT -->
+    <section class="panel">
+      <div class="panel-header">
+        <div class="brand">
+          <div class="brand-badge">POS</div>
+          <div>
+            <div id="restaurantNameTop" style="font-weight:800;">Royal Spice Restaurant</div>
+            <small id="topInfo">Table-wise Billing System</small>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn sm" id="darkModeBtn">🌙</button>
+          <button class="btn sm" id="openSettingsBtn">⚙️</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="table-toolbar">
+          <input id="tableSearch" class="input" placeholder="Search table..." />
+        </div>
+        <div class="btn-row" style="margin-bottom:12px">
+          <span class="pill">Available</span>
+          <span class="pill">Occupied</span>
+          <span class="pill">Billing</span>
+          <span class="pill">Paid</span>
+        </div>
+        <div id="tableGrid" class="table-grid"></div>
+      </div>
+    </section>
+
+    <!-- CENTER -->
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Menu</h2>
+        <div class="btn-row">
+          <button class="btn sm info" id="openMenuManagerBtn">Manage Menu</button>
+          <button class="btn sm" id="sampleOrderBtn">Duplicate Last Order</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="top-controls">
+          <input id="menuSearch" class="input" placeholder="Search items..." />
+          <select id="categoryFilter" class="select"></select>
+          <select id="subCategoryFilter" class="select"></select>
+          <button class="btn sm" id="showTicketBtn">KOT Preview</button>
+          <button class="btn sm primary" id="quickAddCustomBtn">+ Custom Item</button>
+        </div>
+        <div id="categoryTabs" class="tabs"></div>
+        <div id="subCategoryTabs" class="subtabs"></div>
+        <div class="btn-row" style="margin-bottom:12px">
+          <span class="pill" id="activeTableLabel">No table selected</span>
+          <span class="pill" id="mostOrderedLabel">Most ordered: --</span>
+        </div>
+        <div id="menuGrid" class="menu-grid"></div>
+      </div>
+    </section>
+
+    <!-- RIGHT -->
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 id="billTitle">Live Bill</h2>
+          <div class="muted tiny" id="selectedTableMeta">Select a table to start billing</div>
+        </div>
+        <span class="pill" id="serviceTypePill">Dine-In</span>
+      </div>
+      <div class="panel-body">
+        <div class="order-head">
+          <div>
+            <div class="muted tiny">Current Order</div>
+            <div id="orderCountLabel" style="font-weight:700">0 items</div>
+          </div>
+          <div class="btn-row">
+            <button class="btn sm" id="toggleServiceTypeBtn">Toggle Dine-In/Takeaway</button>
+            <button class="btn sm warn" id="markBillingBtn">Set Billing</button>
+          </div>
+        </div>
+
+        <div id="orderList" class="order-list"></div>
+
+        <div class="summary">
+          <div class="grid-2">
+            <div class="field">
+              <label>Tax %</label>
+              <input id="taxInput" type="number" class="input" min="0" step="0.01" />
+            </div>
+            <div class="field">
+              <label>Packing Charge</label>
+              <input id="packingInput" type="number" class="input" min="0" step="0.01" />
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="field">
+              <label>Discount Type</label>
+              <select id="discountType" class="select">
+                <option value="none">None</option>
+                <option value="flat">Flat</option>
+                <option value="percent">Percent</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Discount Value</label>
+              <input id="discountValue" type="number" class="input" min="0" step="0.01" />
+            </div>
+            <div class="field">
+              <label>Round Off</label>
+              <input id="roundOffInput" type="number" class="input" step="0.01" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="switch">
+              <input id="serviceChargeToggle" class="toggle" type="checkbox" />
+              <span>Service Charge</span>
+            </div>
+            <div class="switch">
+              <input id="discountToggle" class="toggle" type="checkbox" />
+              <span>Discount Enabled</span>
+            </div>
+          </div>
+
+          <div class="sum-row"><span>Subtotal</span><strong id="subtotalEl">₹0.00</strong></div>
+          <div class="sum-row"><span>Discount</span><strong id="discountEl">₹0.00</strong></div>
+          <div class="sum-row"><span>Tax</span><strong id="taxEl">₹0.00</strong></div>
+          <div class="sum-row"><span>Service Charge</span><strong id="serviceChargeEl">₹0.00</strong></div>
+          <div class="sum-row"><span>Packing</span><strong id="packingEl">₹0.00</strong></div>
+          <div class="sum-row"><span>Round Off</span><strong id="roundOffEl">₹0.00</strong></div>
+          <div class="sum-row total"><span>Grand Total</span><span id="grandTotalEl">₹0.00</span></div>
+        </div>
+
+        <div style="margin-top:12px">
+          <div class="field">
+            <label>Payment Method</label>
+            <select id="paymentMethod" class="select">
+              <option>Cash</option>
+              <option>UPI</option>
+              <option>Card</option>
+              <option>Split Payment</option>
+            </select>
+          </div>
+
+          <div id="splitPaymentBox" style="display:none">
+            <div class="split-grid">
+              <div class="field">
+                <label>Cash Amount</label>
+                <input id="splitCash" type="number" class="input" min="0" step="0.01" />
+              </div>
+              <div class="field">
+                <label>UPI Amount</label>
+                <input id="splitUpi" type="number" class="input" min="0" step="0.01" />
+              </div>
+              <div class="field">
+                <label>Card Amount</label>
+                <input id="splitCard" type="number" class="input" min="0" step="0.01" />
+              </div>
+              <div class="field">
+                <label>Total Entered</label>
+                <input id="splitTotalDisplay" class="input" readonly />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-row" style="margin-top:14px">
+          <button class="btn primary" id="generateBillBtn">Generate Bill</button>
+          <button class="btn info" id="printBillBtn">Print Bill</button>
+          <button class="btn" id="saveBillBtn">Save Bill</button>
+          <button class="btn warn" id="markPaidBtn">Mark Paid</button>
+          <button class="btn danger" id="resetTableBtn">Reset Table</button>
+        </div>
+
+        <div class="recent-bills">
+          <div class="order-head" style="margin-bottom:4px">
+            <div style="font-weight:700">Recent Bills</div>
+            <span class="muted tiny">Local saved</span>
+          </div>
+          <div id="recentBillsList"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div class="overlay" id="settingsOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Restaurant Settings & Menu Manager</h3>
+        <button class="btn sm danger" onclick="closeSettings()">Close</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-columns">
+          <div>
+            <div class="panel" style="background:#111827">
+              <div class="panel-header"><h3>Restaurant Settings</h3></div>
+              <div class="panel-body">
+                <div class="grid-2">
+                  <div class="field">
+                    <label>Restaurant Name</label>
+                    <input id="settingRestaurantName" class="input" />
+                  </div>
+                  <div class="field">
+                    <label>Currency Symbol</label>
+                    <input id="settingCurrency" class="input" />
+                  </div>
+                </div>
+                <div class="grid-2">
+                  <div class="field">
+                    <label>Tax %</label>
+                    <input id="settingTax" type="number" class="input" min="0" step="0.01" />
+                  </div>
+                  <div class="field">
+                    <label>Service Charge %</label>
+                    <input id="settingServiceChargePercent" type="number" class="input" min="0" step="0.01" />
+                  </div>
+                </div>
+                <div class="grid-2">
+                  <div class="field">
+                    <label>Number of Tables</label>
+                    <input id="settingTableCount" type="number" class="input" min="1" max="100" />
+                  </div>
+                  <div class="field">
+                    <label>Phone</label>
+                    <input id="settingPhone" class="input" />
+                  </div>
+                </div>
+                <div class="grid-2">
+                  <div class="field">
+                    <label>Address</label>
+                    <input id="settingAddress" class="input" />
+                  </div>
+                  <div class="field">
+                    <label>GST Number</label>
+                    <input id="settingGst" class="input" />
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Footer Message</label>
+                  <textarea id="settingFooter" class="textarea"></textarea>
+                </div>
+                <div class="grid-3">
+                  <label class="switch"><input id="settingEnableServiceCharge" class="toggle" type="checkbox" /><span>Service Charge</span></label>
+                  <label class="switch"><input id="settingEnableDiscount" class="toggle" type="checkbox" /><span>Discount</span></label>
+                  <label class="switch"><input id="settingShowVegTag" class="toggle" type="checkbox" /><span>Show Veg/Non-Veg</span></label>
+                </div>
+                <div class="btn-row" style="margin-top:12px">
+                  <button class="btn primary" onclick="saveSettings()">Save Settings</button>
+                  <button class="btn" onclick="resetToDefaults()">Reset Defaults</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel" style="background:#111827;margin-top:16px">
+              <div class="panel-header"><h3>Categories</h3></div>
+              <div class="panel-body">
+                <div class="grid-2">
+                  <div class="field">
+                    <label>Category Name</label>
+                    <input id="newCategoryName" class="input" placeholder="e.g. Seafood" />
+                  </div>
+                  <div class="field">
+                    <label>Subcategories (comma separated)</label>
+                    <input id="newCategorySubs" class="input" placeholder="e.g. Fish, Prawns" />
+                  </div>
+                </div>
+                <div class="btn-row" style="margin-bottom:12px">
+                  <button class="btn primary" onclick="addCategory()">Add Category</button>
+                </div>
+                <div id="categoryList" class="list-box"></div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="panel" style="background:#111827">
+              <div class="panel-header"><h3>Menu Items</h3></div>
+              <div class="panel-body">
+                <div class="grid-2">
+                  <div class="field">
+                    <label>Item Name</label>
+                    <input id="itemName" class="input" />
+                  </div>
+                  <div class="field">
+                    <label>Price</label>
+                    <input id="itemPrice" type="number" class="input" min="0" step="0.01" />
+                  </div>
+                </div>
+                <div class="grid-2">
+                  <div class="field">
+                    <label>Category</label>
+                    <select id="itemCategory" class="select"></select>
+                  </div>
+                  <div class="field">
+                    <label>Subcategory</label>
+                    <input id="itemSubcategory" class="input" placeholder="e.g. Starters" />
+                  </div>
+                </div>
+                <div class="grid-3">
+                  <div class="field">
+                    <label>Type</label>
+                    <select id="itemType" class="select">
+                      <option value="Veg">Veg</option>
+                      <option value="Non-Veg">Non-Veg</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Spicy</label>
+                    <select id="itemSpicy" class="select">
+                      <option value="false">No</option>
+                      <option value="true">Yes</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Code</label>
+                    <input id="itemCode" class="input" placeholder="Optional" />
+                  </div>
+                </div>
+                <label class="switch" style="margin-bottom:10px">
+                  <input id="itemAvailable" class="toggle" type="checkbox" checked />
+                  <span>Available</span>
+                </label>
+                <div class="btn-row" style="margin-bottom:12px">
+                  <button class="btn primary" onclick="addMenuItem()">Add Item</button>
+                </div>
+                <div id="menuItemList" class="list-box"></div>
+              </div>
+            </div>
+
+            <div class="panel" style="background:#111827;margin-top:16px">
+              <div class="panel-header"><h3>Kitchen Order Ticket Preview</h3></div>
+              <div class="panel-body">
+                <div id="kitchenTicket" class="kitchen-ticket">Select a table to preview KOT.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRINT AREA -->
+  <div id="printArea"></div>
+
+  <script>
+    const STORAGE_KEY = "restaurant_pos_state_v1";
+
+    const defaultState = {
+      settings: {
+        restaurantName: "Royal Spice Restaurant",
+        currency: "₹",
+        taxPercent: 5,
+        serviceChargePercent: 5,
+        tableCount: 20,
+        footerMessage: "Thank you for visiting. Please come again.",
+        phone: "+91 98765 43210",
+        address: "Main Street, Pune",
+        gstNumber: "27ABCDE1234F1Z5",
+        enableServiceCharge: true,
+        enableDiscount: true,
+        showVegTag: true,
+        darkMode: true
+      },
+      categories: [
+        { id: uid(), name: "Beverages", enabled: true, subcategories: ["Tea", "Coffee", "Soft Drinks", "Juices", "Mocktails"] },
+        { id: uid(), name: "Indian Cuisine", enabled: true, subcategories: ["Starters", "Main Course", "Rice", "Breads"] },
+        { id: uid(), name: "Chinese", enabled: true, subcategories: ["Noodles", "Rice", "Starters", "Gravy"] },
+        { id: uid(), name: "Seafood", enabled: true, subcategories: ["Fish", "Prawns", "Crab"] },
+        { id: uid(), name: "Veg", enabled: true, subcategories: ["Starters", "Main Course"] },
+        { id: uid(), name: "Non-Veg", enabled: true, subcategories: ["Starters", "Main Course"] },
+        { id: uid(), name: "Desserts", enabled: true, subcategories: ["Hot", "Cold"] },
+        { id: uid(), name: "Starters", enabled: true, subcategories: ["Veg Starters", "Non-Veg Starters"] }
+      ],
+      menuItems: [],
+      tables: [],
+      recentBills: [],
+      selectedTableId: null,
+      lastOrderItems: []
+    };
+
+    const sampleMenu = [
+      { name:"Masala Chai", price:30, category:"Beverages", subcategory:"Tea", type:"Veg", spicy:false, available:true, code:"BEV-001" },
+      { name:"Cold Coffee", price:90, category:"Beverages", subcategory:"Coffee", type:"Veg", spicy:false, available:true, code:"BEV-002" },
+      { name:"Fresh Lime Soda", price:70, category:"Beverages", subcategory:"Soft Drinks", type:"Veg", spicy:false, available:true, code:"BEV-003" },
+      { name:"Virgin Mojito", price:120, category:"Beverages", subcategory:"Mocktails", type:"Veg", spicy:false, available:true, code:"BEV-004" },
+
+      { name:"Paneer Tikka", price:220, category:"Indian Cuisine", subcategory:"Starters", type:"Veg", spicy:true, available:true, code:"IND-001" },
+      { name:"Veg Biryani", price:240, category:"Indian Cuisine", subcategory:"Rice", type:"Veg", spicy:true, available:true, code:"IND-002" },
+      { name:"Butter Naan", price:45, category:"Indian Cuisine", subcategory:"Breads", type:"Veg", spicy:false, available:true, code:"IND-003" },
+      { name:"Dal Tadka", price:180, category:"Indian Cuisine", subcategory:"Main Course", type:"Veg", spicy:true, available:true, code:"IND-004" },
+
+      { name:"Hakka Noodles", price:190, category:"Chinese", subcategory:"Noodles", type:"Veg", spicy:true, available:true, code:"CHI-001" },
+      { name:"Veg Fried Rice", price:180, category:"Chinese", subcategory:"Rice", type:"Veg", spicy:true, available:true, code:"CHI-002" },
+      { name:"Gobi Manchurian", price:210, category:"Chinese", subcategory:"Starters", type:"Veg", spicy:true, available:true, code:"CHI-003" },
+
+      { name:"Fish Curry", price:320, category:"Seafood", subcategory:"Fish", type:"Non-Veg", spicy:true, available:true, code:"SEA-001" },
+      { name:"Prawns Fry", price:380, category:"Seafood", subcategory:"Prawns", type:"Non-Veg", spicy:true, available:true, code:"SEA-002" },
+
+      { name:"Veg Kolhapuri", price:230, category:"Veg", subcategory:"Main Course", type:"Veg", spicy:true, available:true, code:"VEG-001" },
+      { name:"Mushroom Masala", price:220, category:"Veg", subcategory:"Main Course", type:"Veg", spicy:true, available:true, code:"VEG-002" },
+
+      { name:"Butter Chicken", price:340, category:"Non-Veg", subcategory:"Main Course", type:"Non-Veg", spicy:true, available:true, code:"NV-001" },
+      { name:"Chicken Tikka", price:310, category:"Non-Veg", subcategory:"Starters", type:"Non-Veg", spicy:true, available:true, code:"NV-002" },
+
+      { name:"Gulab Jamun", price:90, category:"Desserts", subcategory:"Hot", type:"Veg", spicy:false, available:true, code:"DES-001" },
+      { name:"Ice Cream", price:110, category:"Desserts", subcategory:"Cold", type:"Veg", spicy:false, available:true, code:"DES-002" },
+    ];
+
+    let state = loadState();
+    let activeCategory = "All";
+    let activeSubcategory = "All";
+
+    function uid(){
+      return Math.random().toString(36).slice(2,10);
+    }
+
+    function loadState(){
+      try{
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if(saved){
+          if(!saved.menuItems || !saved.menuItems.length){
+            saved.menuItems = sampleMenu.map(i => ({ id: uid(), ...i }));
+          }
+          if(!saved.tables || !saved.tables.length){
+            saved.tables = createTables(saved.settings?.tableCount || 20);
+          }
+          normalizeTables(saved);
+          return saved;
+        }
+      }catch(e){}
+      const fresh = structuredClone(defaultState);
+      fresh.menuItems = sampleMenu.map(i => ({ id: uid(), ...i }));
+      fresh.tables = createTables(fresh.settings.tableCount);
+      normalizeTables(fresh);
+      return fresh;
+    }
+
+    function saveState(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function createTables(count){
+      return Array.from({length: count}, (_,i) => ({
+        id: uid(),
+        number: i+1,
+        status: "Available",
+        orderItems: [],
+        serviceType: "Dine-In",
+        billing: {
+          taxPercent: 5,
+          packingCharge: 0,
+          discountType: "none",
+          discountValue: 0,
+          roundOff: 0,
+          paymentMethod: "Cash",
+          split: { cash:0, upi:0, card:0 },
+          serviceChargeEnabled: true,
+          discountEnabled: true
+        },
+        billNumber: null,
+        paidAt: null
+      }));
+    }
+
+    function normalizeTables(obj){
+      const defaults = {
+        taxPercent: obj.settings.taxPercent,
+        packingCharge: 0,
+        discountType: "none",
+        discountValue: 0,
+        roundOff: 0,
+        paymentMethod: "Cash",
+        split: { cash:0, upi:0, card:0 },
+        serviceChargeEnabled: obj.settings.enableServiceCharge,
+        discountEnabled: obj.settings.enableDiscount
+      };
+      obj.tables.forEach(t => {
+        t.orderItems = t.orderItems || [];
+        t.serviceType = t.serviceType || "Dine-In";
+        t.status = t.status || "Available";
+        t.billing = { ...defaults, ...(t.billing || {}) };
+        t.billing.split = { cash:0, upi:0, card:0, ...(t.billing.split || {}) };
+      });
+      if(!obj.selectedTableId && obj.tables[0]) obj.selectedTableId = obj.tables[0].id;
+    }
+
+    function formatCurrency(num){
+      return `${state.settings.currency}${(+num || 0).toFixed(2)}`;
+    }
+
+    function selectedTable(){
+      return state.tables.find(t => t.id === state.selectedTableId) || null;
+    }
+
+    function renderAll(){
+      applyTheme();
+      renderTopInfo();
+      renderTables();
+      renderCategoryControls();
+      renderMenu();
+      renderBill();
+      renderRecentBills();
+      renderSettingsData();
+      renderCategoryManager();
+      renderMenuManager();
+      renderKitchenTicket();
+      saveState();
+    }
+
+    function applyTheme(){
+      document.body.style.background = state.settings.darkMode
+        ? "linear-gradient(135deg,#0b1220,#111827 50%,#0b1220)"
+        : "linear-gradient(135deg,#eff6ff,#e2e8f0 50%,#f8fafc)";
+      if(!state.settings.darkMode){
+        document.documentElement.style.setProperty('--bg','#f8fafc');
+        document.documentElement.style.setProperty('--panel','#ffffff');
+        document.documentElement.style.setProperty('--panel-2','#f1f5f9');
+        document.documentElement.style.setProperty('--muted','#475569');
+        document.documentElement.style.setProperty('--text','#0f172a');
+        document.documentElement.style.setProperty('--border','#cbd5e1');
+      }else{
+        document.documentElement.style.setProperty('--bg','#0f172a');
+        document.documentElement.style.setProperty('--panel','#111827');
+        document.documentElement.style.setProperty('--panel-2','#1f2937');
+        document.documentElement.style.setProperty('--muted','#94a3b8');
+        document.documentElement.style.setProperty('--text','#f8fafc');
+        document.documentElement.style.setProperty('--border','#334155');
+      }
+      document.getElementById("darkModeBtn").textContent = state.settings.darkMode ? "🌙" : "☀️";
+    }
+
+    function renderTopInfo(){
+      document.getElementById("restaurantNameTop").textContent = state.settings.restaurantName;
+      document.getElementById("topInfo").textContent = `${state.settings.tableCount} tables • Tax ${state.settings.taxPercent}%`;
+    }
+
+    function renderTables(){
+      const grid = document.getElementById("tableGrid");
+      const q = document.getElementById("tableSearch").value.toLowerCase().trim();
+      grid.innerHTML = "";
+      state.tables
+        .filter(t => `table ${t.number}`.toLowerCase().includes(q))
+        .forEach(table => {
+          const totals = calculateTableTotals(table);
+          const card = document.createElement("div");
+          card.className = `table-card ${table.id === state.selectedTableId ? "active" : ""}`;
+          card.innerHTML = `
+            <div class="table-head">
+              <div class="table-name">Table ${table.number}</div>
+              <div class="status-dot status-${table.status.toLowerCase().replaceAll(" ","-")}"></div>
+            </div>
+            <div class="table-meta">
+              <span>${table.status}</span>
+              <span>${table.orderItems.length} items</span>
+            </div>
+            <div class="table-total">${formatCurrency(totals.grandTotal)}</div>
+          `;
+          card.onclick = () => {
+            state.selectedTableId = table.id;
+            renderAll();
+          };
+          grid.appendChild(card);
+        });
+    }
+
+    function enabledCategories(){
+      return state.categories.filter(c => c.enabled);
+    }
+
+    function renderCategoryControls(){
+      const categoryTabs = document.getElementById("categoryTabs");
+      const categoryFilter = document.getElementById("categoryFilter");
+      const subFilter = document.getElementById("subCategoryFilter");
+      const subTabs = document.getElementById("subCategoryTabs");
+
+      categoryTabs.innerHTML = "";
+      categoryFilter.innerHTML = `<option value="All">All Categories</option>`;
+      subFilter.innerHTML = `<option value="All">All Subcategories</option>`;
+
+      const allTab = document.createElement("button");
+      allTab.className = `tab ${activeCategory === "All" ? "active" : ""}`;
+      allTab.textContent = "All";
+      allTab.onclick = () => { activeCategory = "All"; activeSubcategory = "All"; renderAll(); };
+      categoryTabs.appendChild(allTab);
+
+      enabledCategories().forEach(cat => {
+        const btn = document.createElement("button");
+        btn.className = `tab ${activeCategory === cat.name ? "active" : ""}`;
+        btn.textContent = cat.name;
+        btn.onclick = () => {
+          activeCategory = cat.name;
+          activeSubcategory = "All";
+          renderAll();
+        };
+        categoryTabs.appendChild(btn);
+
+        const opt = document.createElement("option");
+        opt.value = cat.name;
+        opt.textContent = cat.name;
+        categoryFilter.appendChild(opt);
+      });
+      categoryFilter.value = activeCategory;
+
+      let subs = [];
+      if(activeCategory === "All"){
+        subs = [...new Set(enabledCategories().flatMap(c => c.subcategories || []))];
+      }else{
+        const cat = state.categories.find(c => c.name === activeCategory);
+        subs = cat ? (cat.subcategories || []) : [];
+      }
+
+      const allSub = document.createElement("button");
+      allSub.className = `subtab ${activeSubcategory === "All" ? "active" : ""}`;
+      allSub.textContent = "All";
+      allSub.onclick = () => { activeSubcategory = "All"; renderAll(); };
+      subTabs.innerHTML = "";
+      subTabs.appendChild(allSub);
+
+      subs.forEach(sc => {
+        const opt = document.createElement("option");
+        opt.value = sc;
+        opt.textContent = sc;
+        subFilter.appendChild(opt);
+
+        const btn = document.createElement("button");
+        btn.className = `subtab ${activeSubcategory === sc ? "active" : ""}`;
+        btn.textContent = sc;
+        btn.onclick = () => { activeSubcategory = sc; renderAll(); };
+        subTabs.appendChild(btn);
+      });
+
+      subFilter.value = activeSubcategory;
+
+      categoryFilter.onchange = e => { activeCategory = e.target.value; activeSubcategory = "All"; renderAll(); };
+      subFilter.onchange = e => { activeSubcategory = e.target.value; renderAll(); };
+    }
+
+    function filteredMenuItems(){
+      const q = document.getElementById("menuSearch").value.toLowerCase().trim();
+      const enabledSet = new Set(enabledCategories().map(c => c.name));
+      return state.menuItems.filter(item => {
+        if(!enabledSet.has(item.category)) return false;
+        if(activeCategory !== "All" && item.category !== activeCategory) return false;
+        if(activeSubcategory !== "All" && item.subcategory !== activeSubcategory) return false;
+        if(q && ![item.name,item.category,item.subcategory,item.code].join(" ").toLowerCase().includes(q)) return false;
+        return true;
+      });
+    }
+
+    function mostOrderedItemName(){
+      const count = {};
+      state.tables.forEach(t => t.orderItems.forEach(i => {
+        count[i.name] = (count[i.name] || 0) + i.qty;
+      }));
+      const top = Object.entries(count).sort((a,b)=>b[1]-a[1])[0];
+      return top ? `${top[0]} (${top[1]})` : "--";
+    }
+
+    function renderMenu(){
+      const grid = document.getElementById("menuGrid");
+      const table = selectedTable();
+      grid.innerHTML = "";
+      document.getElementById("activeTableLabel").textContent = table ? `Active: Table ${table.number}` : "No table selected";
+      document.getElementById("mostOrderedLabel").textContent = `Most ordered: ${mostOrderedItemName()}`;
+
+      filteredMenuItems().forEach(item => {
+        const card = document.createElement("div");
+        card.className = "item-card";
+        card.innerHTML = `
+          <div class="item-top">
+            <div>
+              <div class="item-name">${escapeHtml(item.name)}</div>
+              <div class="muted tiny">${escapeHtml(item.category)} • ${escapeHtml(item.subcategory || "General")}</div>
+            </div>
+            <div class="price">${formatCurrency(item.price)}</div>
+          </div>
+          <div class="item-tags">
+            ${state.settings.showVegTag ? `<span class="tag ${item.type === "Veg" ? "veg" : "nonveg"}">${item.type}</span>` : ""}
+            ${item.spicy ? `<span class="tag">🌶️ Spicy</span>` : ""}
+            ${!item.available ? `<span class="tag out">Out of Stock</span>` : ""}
+            ${item.code ? `<span class="tag">${escapeHtml(item.code)}</span>` : ""}
+          </div>
+          <div class="quick-notes">
+            <span class="chip" data-note="Less Spicy">Less Spicy</span>
+            <span class="chip" data-note="No Onion">No Onion</span>
+            <span class="chip" data-note="Extra Cheese">Extra Cheese</span>
+            <span class="chip" data-note="No Ice">No Ice</span>
+          </div>
+          <div class="item-actions">
+            <button class="btn sm ${item.available ? "primary" : ""}" ${!item.available ? "disabled" : ""}>Add to Bill</button>
+            <button class="btn sm">Add with Note</button>
+          </div>
+        `;
+        const [addBtn, noteBtn] = card.querySelectorAll("button");
+        addBtn.onclick = () => addItemToSelectedTable(item);
+        noteBtn.onclick = () => {
+          const note = prompt("Enter note for this item:", "");
+          if(note !== null) addItemToSelectedTable(item, note.trim());
+        };
+        card.querySelectorAll(".chip").forEach(chip => {
+          chip.onclick = () => addItemToSelectedTable(item, chip.dataset.note);
+        });
+        grid.appendChild(card);
+      });
+
+      if(!grid.children.length){
+        grid.innerHTML = `<div class="muted">No menu items found.</div>`;
+      }
+    }
+
+    function addItemToSelectedTable(menuItem, note=""){
+      const table = selectedTable();
+      if(!table){
+        alert("Please select a table.");
+        return;
+      }
+      const existing = table.orderItems.find(i => i.menuItemId === menuItem.id && i.note === note);
+      if(existing){
+        existing.qty += 1;
+      }else{
+        table.orderItems.push({
+          id: uid(),
+          menuItemId: menuItem.id,
+          name: menuItem.name,
+          price: +menuItem.price,
+          qty: 1,
+          note: note || "",
+          type: menuItem.type
+        });
+      }
+      if(table.status === "Available" || table.status === "Paid") table.status = "Occupied";
+      renderAll();
+    }
+
+    function renderBill(){
+      const table = selectedTable();
+      const list = document.getElementById("orderList");
+      const title = document.getElementById("billTitle");
+      const meta = document.getElementById("selectedTableMeta");
+      const servicePill = document.getElementById("serviceTypePill");
+
+      if(!table){
+        title.textContent = "Live Bill";
+        meta.textContent = "Select a table to start billing";
+        servicePill.textContent = "Dine-In";
+        list.innerHTML = `<div class="muted" style="padding:14px">No table selected.</div>`;
+        return;
+      }
+
+      title.textContent = `Table ${table.number} Bill`;
+      meta.textContent = `${table.status} • ${table.orderItems.length} line items`;
+      servicePill.textContent = table.serviceType;
+
+      document.getElementById("taxInput").value = table.billing.taxPercent;
+      document.getElementById("packingInput").value = table.billing.packingCharge;
+      document.getElementById("discountType").value = table.billing.discountType;
+      document.getElementById("discountValue").value = table.billing.discountValue;
+      document.getElementById("roundOffInput").value = table.billing.roundOff;
+      document.getElementById("paymentMethod").value = table.billing.paymentMethod;
+      document.getElementById("serviceChargeToggle").checked = table.billing.serviceChargeEnabled;
+      document.getElementById("discountToggle").checked = table.billing.discountEnabled;
+
+      document.getElementById("splitCash").value = table.billing.split.cash || 0;
+      document.getElementById("splitUpi").value = table.billing.split.upi || 0;
+      document.getElementById("splitCard").value = table.billing.split.card || 0;
+
+      list.innerHTML = "";
+      table.orderItems.forEach(item => {
+        const row = document.createElement("div");
+        row.className = "order-item";
+        row.innerHTML = `
+          <div class="order-row">
+            <div>
+              <div class="order-name">${escapeHtml(item.name)}</div>
+              <div class="muted tiny">${formatCurrency(item.price)} each • ${item.type}</div>
+            </div>
+            <div style="text-align:right">
+              <div><strong>${formatCurrency(item.price * item.qty)}</strong></div>
+              <div class="qty-box" style="margin-top:6px;justify-content:flex-end">
+                <button class="icon-btn">-</button>
+                <span>${item.qty}</span>
+                <button class="icon-btn">+</button>
+                <button class="icon-btn" title="Edit Note">✎</button>
+                <button class="icon-btn" title="Remove">🗑</button>
+              </div>
+            </div>
+          </div>
+          ${item.note ? `<div class="note">${escapeHtml(item.note)}</div>` : ""}
+        `;
+        const btns = row.querySelectorAll(".icon-btn");
+        btns[0].onclick = () => changeQty(item.id, -1);
+        btns[1].onclick = () => changeQty(item.id, 1);
+        btns[2].onclick = () => editNote(item.id);
+        btns[3].onclick = () => removeOrderItem(item.id);
+        list.appendChild(row);
+      });
+
+      if(!table.orderItems.length){
+        list.innerHTML = `<div class="muted" style="padding:14px">No items added yet.</div>`;
+      }
+
+      const totals = calculateTableTotals(table);
+      document.getElementById("orderCountLabel").textContent = `${table.orderItems.reduce((a,b)=>a+b.qty,0)} items`;
+      document.getElementById("subtotalEl").textContent = formatCurrency(totals.subtotal);
+      document.getElementById("discountEl").textContent = formatCurrency(totals.discount);
+      document.getElementById("taxEl").textContent = formatCurrency(totals.tax);
+      document.getElementById("serviceChargeEl").textContent = formatCurrency(totals.serviceCharge);
+      document.getElementById("packingEl").textContent = formatCurrency(totals.packingCharge);
+      document.getElementById("roundOffEl").textContent = formatCurrency(totals.roundOff);
+      document.getElementById("grandTotalEl").textContent = formatCurrency(totals.grandTotal);
+
+      const showSplit = table.billing.paymentMethod === "Split Payment";
+      document.getElementById("splitPaymentBox").style.display = showSplit ? "block" : "none";
+      document.getElementById("splitTotalDisplay").value = formatCurrency(
+        (+table.billing.split.cash || 0) + (+table.billing.split.upi || 0) + (+table.billing.split.card || 0)
+      );
+    }
+
+    function calculateTableTotals(table){
+      const subtotal = table.orderItems.reduce((sum,item)=>sum + (item.price * item.qty), 0);
+
+      let discount = 0;
+      if(table.billing.discountEnabled){
+        if(table.billing.discountType === "flat"){
+          discount = +table.billing.discountValue || 0;
+        }else if(table.billing.discountType === "percent"){
+          discount = subtotal * ((+table.billing.discountValue || 0) / 100);
+        }
+      }
+      discount = Math.min(discount, subtotal);
+
+      const taxableBase = subtotal - discount;
+      const tax = taxableBase * ((+table.billing.taxPercent || 0) / 100);
+      const serviceCharge = table.billing.serviceChargeEnabled
+        ? taxableBase * ((+state.settings.serviceChargePercent || 0) / 100)
+        : 0;
+      const packingCharge = +table.billing.packingCharge || 0;
+      const roundOff = +table.billing.roundOff || 0;
+
+      const grandTotal = taxableBase + tax + serviceCharge + packingCharge + roundOff;
+      return {
+        subtotal, discount, tax, serviceCharge, packingCharge, roundOff,
+        grandTotal: Math.max(0, grandTotal)
+      };
+    }
+
+    function changeQty(orderItemId, delta){
+      const table = selectedTable();
+      if(!table) return;
+      const item = table.orderItems.find(i => i.id === orderItemId);
+      if(!item) return;
+      item.qty += delta;
+      if(item.qty <= 0){
+        table.orderItems = table.orderItems.filter(i => i.id !== orderItemId);
+      }
+      updateTableStatusFromItems(table);
+      renderAll();
+    }
+
+    function editNote(orderItemId){
+      const table = selectedTable();
+      if(!table) return;
+      const item = table.orderItems.find(i => i.id === orderItemId);
+      if(!item) return;
+      const note = prompt("Edit note:", item.note || "");
+      if(note !== null){
+        item.note = note.trim();
+        renderAll();
+      }
+    }
+
+    function removeOrderItem(orderItemId){
+      const table = selectedTable();
+      if(!table) return;
+      table.orderItems = table.orderItems.filter(i => i.id !== orderItemId);
+      updateTableStatusFromItems(table);
+      renderAll();
+    }
+
+    function updateTableStatusFromItems(table){
+      if(!table.orderItems.length){
+        table.status = "Available";
+      }else if(table.status === "Paid"){
+        table.status = "Occupied";
+      }
+    }
+
+    function renderRecentBills(){
+      const el = document.getElementById("recentBillsList");
+      el.innerHTML = "";
+      const recent = [...state.recentBills].slice(-8).reverse();
+      if(!recent.length){
+        el.innerHTML = `<div class="muted tiny">No recent bills.</div>`;
+        return;
+      }
+      recent.forEach(b => {
+        const item = document.createElement("div");
+        item.className = "recent-item";
+        item.innerHTML = `
+          <div>
+            <div><strong>Bill #${b.billNumber}</strong></div>
+            <div class="muted tiny">Table ${b.tableNumber} • ${b.date}</div>
+          </div>
+          <div style="text-align:right">
+            <div><strong>${formatCurrency(b.total)}</strong></div>
+            <div class="muted tiny">${escapeHtml(b.paymentMethod)}</div>
+          </div>
+        `;
+        el.appendChild(item);
+      });
+    }
+
+    function buildReceiptHtml(table){
+      const totals = calculateTableTotals(table);
+      const billNumber = table.billNumber || generateBillNumber();
+      const now = new Date();
+      const splitInfo = table.billing.paymentMethod === "Split Payment"
+        ? `
+          <tr><td>Cash</td><td class="right">${formatCurrency(table.billing.split.cash || 0)}</td></tr>
+          <tr><td>UPI</td><td class="right">${formatCurrency(table.billing.split.upi || 0)}</td></tr>
+          <tr><td>Card</td><td class="right">${formatCurrency(table.billing.split.card || 0)}</td></tr>
+        `
+        : "";
+
+      return `
+        <div class="receipt">
+          <h2 style="text-align:center">${escapeHtml(state.settings.restaurantName)}</h2>
+          <p style="text-align:center">📍 ${escapeHtml(state.settings.address)}</p>
+          <p style="text-align:center">📞 ${escapeHtml(state.settings.phone)}</p>
+          <p style="text-align:center">GST: ${escapeHtml(state.settings.gstNumber)}</p>
+          <hr />
+          <p><strong>Bill No:</strong> ${billNumber}</p>
+          <p><strong>Table:</strong> ${table.number}</p>
+          <p><strong>Service:</strong> ${table.serviceType}</p>
+          <p><strong>Date:</strong> ${now.toLocaleDateString()} ${now.toLocaleTimeString()}</p>
+          <hr />
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th class="right">Qty</th>
+                <th class="right">Amt</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${table.orderItems.map(i => `
+                <tr>
+                  <td>
+                    ${escapeHtml(i.name)}
+                    ${i.note ? `<div style="font-size:11px;color:#444">${escapeHtml(i.note)}</div>` : ""}
+                  </td>
+                  <td class="right">${i.qty}</td>
+                  <td class="right">${formatCurrency(i.qty * i.price)}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+          <hr />
+          <table>
+            <tr><td>Subtotal</td><td class="right">${formatCurrency(totals.subtotal)}</td></tr>
+            <tr><td>Discount</td><td class="right">- ${formatCurrency(totals.discount)}</td></tr>
+            <tr><td>Tax</td><td class="right">${formatCurrency(totals.tax)}</td></tr>
+            <tr><td>Service Charge</td><td class="right">${formatCurrency(totals.serviceCharge)}</td></tr>
+            <tr><td>Packing</td><td class="right">${formatCurrency(totals.packingCharge)}</td></tr>
+            <tr><td>Round Off</td><td class="right">${formatCurrency(totals.roundOff)}</td></tr>
+            <tr><td><strong>Grand Total</strong></td><td class="right"><strong>${formatCurrency(totals.grandTotal)}</strong></td></tr>
+          </table>
+          <hr />
+          <p><strong>Payment Method:</strong> ${escapeHtml(table.billing.paymentMethod)}</p>
+          ${table.billing.paymentMethod === "Split Payment" ? `<table>${splitInfo}</table>` : ""}
+          <p style="text-align:center;margin-top:14px">${escapeHtml(state.settings.footerMessage)}</p>
+        </div>
+      `;
+    }
+
+    function generateBillNumber(){
+      return String(Date.now()).slice(-6);
+    }
+
+    function generateBill(saveOnly=false){
+      const table = selectedTable();
+      if(!table){
+        alert("Please select a table.");
+        return;
+      }
+      if(!table.orderItems.length){
+        alert("No items in this table bill.");
+        return;
+      }
+
+      if(table.billing.paymentMethod === "Split Payment"){
+        const total = calculateTableTotals(table).grandTotal;
+        const splitTotal = (+table.billing.split.cash || 0) + (+table.billing.split.upi || 0) + (+table.billing.split.card || 0);
+        if(Math.abs(splitTotal - total) > 0.01){
+          if(!confirm(`Split total ${formatCurrency(splitTotal)} does not match bill total ${formatCurrency(total)}. Continue?`)){
+            return;
+          }
+        }
+      }
+
+      if(!table.billNumber) table.billNumber = generateBillNumber();
+      table.status = "Billing";
+      const html = buildReceiptHtml(table);
+      document.getElementById("printArea").innerHTML = html;
+
+      if(saveOnly){
+        const totals = calculateTableTotals(table);
+        state.recentBills.push({
+          id: uid(),
+          billNumber: table.billNumber,
+          tableNumber: table.number,
+          total: totals.grandTotal,
+          paymentMethod: table.billing.paymentMethod,
+          date: new Date().toLocaleString()
+        });
+        state.lastOrderItems = structuredClone(table.orderItems);
+      }
+      renderAll();
+    }
+
+    function markPaid(){
+      const table = selectedTable();
+      if(!table){
+        alert("Please select a table.");
+        return;
+      }
+      if(!table.orderItems.length){
+        alert("No active order to mark as paid.");
+        return;
+      }
+      generateBill(true);
+      table.status = "Paid";
+      table.paidAt = new Date().toLocaleString();
+      renderAll();
+    }
+
+    function resetTable(){
+      const table = selectedTable();
+      if(!table){
+        alert("Please select a table.");
+        return;
+      }
+      if(!confirm(`Reset Table ${table.number}? This will clear its order.`)) return;
+      table.orderItems = [];
+      table.status = "Available";
+      table.serviceType = "Dine-In";
+      table.billNumber = null;
+      table.paidAt = null;
+      table.billing = {
+        taxPercent: state.settings.taxPercent,
+        packingCharge: 0,
+        discountType: "none",
+        discountValue: 0,
+        roundOff: 0,
+        paymentMethod: "Cash",
+        split: { cash:0, upi:0, card:0 },
+        serviceChargeEnabled: state.settings.enableServiceCharge,
+        discountEnabled: state.settings.enableDiscount
+      };
+      renderAll();
+    }
+
+    function duplicateLastOrder(){
+      const table = selectedTable();
+      if(!table){
+        alert("Please select a table.");
+        return;
+      }
+      if(!state.lastOrderItems.length){
+        alert("No previous order available.");
+        return;
+      }
+      table.orderItems = structuredClone(state.lastOrderItems).map(i => ({ ...i, id: uid() }));
+      table.status = "Occupied";
+      renderAll();
+    }
+
+    function renderSettingsData(){
+      document.getElementById("settingRestaurantName").value = state.settings.restaurantName;
+      document.getElementById("settingCurrency").value = state.settings.currency;
+      document.getElementById("settingTax").value = state.settings.taxPercent;
+      document.getElementById("settingServiceChargePercent").value = state.settings.serviceChargePercent;
+      document.getElementById("settingTableCount").value = state.settings.tableCount;
+      document.getElementById("settingPhone").value = state.settings.phone;
+      document.getElementById("settingAddress").value = state.settings.address;
+      document.getElementById("settingGst").value = state.settings.gstNumber;
+      document.getElementById("settingFooter").value = state.settings.footerMessage;
+      document.getElementById("settingEnableServiceCharge").checked = state.settings.enableServiceCharge;
+      document.getElementById("settingEnableDiscount").checked = state.settings.enableDiscount;
+      document.getElementById("settingShowVegTag").checked = state.settings.showVegTag;
+
+      const itemCategory = document.getElementById("itemCategory");
+      itemCategory.innerHTML = "";
+      state.categories.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.name;
+        opt.textContent = c.name;
+        itemCategory.appendChild(opt);
+      });
+    }
+
+    function saveSettings(){
+      const oldCount = state.settings.tableCount;
+      state.settings.restaurantName = document.getElementById("settingRestaurantName").value.trim() || "Restaurant";
+      state.settings.currency = document.getElementById("settingCurrency").value.trim() || "₹";
+      state.settings.taxPercent = +document.getElementById("settingTax").value || 0;
+      state.settings.serviceChargePercent = +document.getElementById("settingServiceChargePercent").value || 0;
+      state.settings.tableCount = Math.max(1, +document.getElementById("settingTableCount").value || 20);
+      state.settings.phone = document.getElementById("settingPhone").value.trim();
+      state.settings.address = document.getElementById("settingAddress").value.trim();
+      state.settings.gstNumber = document.getElementById("settingGst").value.trim();
+      state.settings.footerMessage = document.getElementById("settingFooter").value.trim();
+      state.settings.enableServiceCharge = document.getElementById("settingEnableServiceCharge").checked;
+      state.settings.enableDiscount = document.getElementById("settingEnableDiscount").checked;
+      state.settings.showVegTag = document.getElementById("settingShowVegTag").checked;
+
+      if(state.settings.tableCount > oldCount){
+        const more = createTables(state.settings.tableCount - oldCount).map((t,idx)=>({ ...t, number: oldCount + idx + 1 }));
+        state.tables.push(...more);
+      }else if(state.settings.tableCount < oldCount){
+        state.tables = state.tables.filter(t => t.number <= state.settings.tableCount);
+        if(!state.tables.find(t => t.id === state.selectedTableId)){
+          state.selectedTableId = state.tables[0]?.id || null;
+        }
+      }
+
+      state.tables.forEach(t => {
+        t.billing.taxPercent = t.billing.taxPercent ?? state.settings.taxPercent;
+        if(t.billing.serviceChargeEnabled === undefined) t.billing.serviceChargeEnabled = state.settings.enableServiceCharge;
+        if(t.billing.discountEnabled === undefined) t.billing.discountEnabled = state.settings.enableDiscount;
+      });
+
+      renderAll();
+      alert("Settings saved successfully.");
+    }
+
+    function resetToDefaults(){
+      if(!confirm("Reset app to default sample data?")) return;
+      state = loadStateFromDefaults();
+      renderAll();
+    }
+
+    function loadStateFromDefaults(){
+      const fresh = structuredClone(defaultState);
+      fresh.menuItems = sampleMenu.map(i => ({ id: uid(), ...i }));
+      fresh.tables = createTables(fresh.settings.tableCount);
+      normalizeTables(fresh);
+      return fresh;
+    }
+
+    function renderCategoryManager(){
+      const box = document.getElementById("categoryList");
+      box.innerHTML = "";
+      if(!state.categories.length){
+        box.innerHTML = `<div class="muted">No categories found.</div>`;
+        return;
+      }
+      state.categories.forEach(cat => {
+        const row = document.createElement("div");
+        row.className = "category-row";
+        row.innerHTML = `
+          <div>
+            <div style="font-weight:700">${escapeHtml(cat.name)}</div>
+            <div class="muted tiny">${escapeHtml((cat.subcategories || []).join(", ") || "No subcategories")}</div>
+          </div>
+          <label class="switch">
+            <input class="toggle" type="checkbox" ${cat.enabled ? "checked" : ""} />
+            <span>${cat.enabled ? "On" : "Off"}</span>
+          </label>
+          <button class="btn sm">Edit</button>
+          <button class="btn sm danger">Delete</button>
+        `;
+        const toggle = row.querySelector(".toggle");
+        const [editBtn, deleteBtn] = row.querySelectorAll("button");
+        toggle.onchange = () => {
+          cat.enabled = toggle.checked;
+          if(activeCategory === cat.name && !cat.enabled){
+            activeCategory = "All";
+            activeSubcategory = "All";
+          }
+          renderAll();
+        };
+        editBtn.onclick = () => editCategory(cat.id);
+        deleteBtn.onclick = () => deleteCategory(cat.id);
+        box.appendChild(row);
+      });
+    }
+
+    function addCategory(){
+      const name = document.getElementById("newCategoryName").value.trim();
+      const subs = document.getElementById("newCategorySubs").value
+        .split(",").map(s => s.trim()).filter(Boolean);
+      if(!name){
+        alert("Enter category name.");
+        return;
+      }
+      if(state.categories.some(c => c.name.toLowerCase() === name.toLowerCase())){
+        alert("Category already exists.");
+        return;
+      }
+      state.categories.push({ id: uid(), name, enabled: true, subcategories: subs });
+      document.getElementById("newCategoryName").value = "";
+      document.getElementById("newCategorySubs").value = "";
+      renderAll();
+    }
+
+    function editCategory(id){
+      const cat = state.categories.find(c => c.id === id);
+      if(!cat) return;
+      const newName = prompt("Edit category name:", cat.name);
+      if(newName === null) return;
+      const sub = prompt("Edit subcategories (comma separated):", (cat.subcategories || []).join(", "));
+      if(sub === null) return;
+      cat.name = newName.trim() || cat.name;
+      cat.subcategories = sub.split(",").map(s => s.trim()).filter(Boolean);
+
+      state.menuItems.forEach(item => {
+        if(item.category === cat.name) item.category = cat.name;
+      });
+      renderAll();
+    }
+
+    function deleteCategory(id){
+      const cat = state.categories.find(c => c.id === id);
+      if(!cat) return;
+      const hasItems = state.menuItems.some(i => i.category === cat.name);
+      if(hasItems){
+        if(!confirm(`Category "${cat.name}" has menu items. Delete it anyway?`)) return;
+        state.menuItems = state.menuItems.filter(i => i.category !== cat.name);
+      }
+      state.categories = state.categories.filter(c => c.id !== id);
+      if(activeCategory === cat.name){
+        activeCategory = "All";
+        activeSubcategory = "All";
+      }
+      renderAll();
+    }
+
+    function renderMenuManager(){
+      const list = document.getElementById("menuItemList");
+      list.innerHTML = "";
+      state.menuItems.forEach(item => {
+        const row = document.createElement("div");
+        row.className = "list-item";
+        row.innerHTML = `
+          <div>
+            <div style="font-weight:700">${escapeHtml(item.name)}</div>
+            <div class="muted tiny">${escapeHtml(item.category)} • ${escapeHtml(item.subcategory || "General")} • ${item.type}</div>
+          </div>
+          <div><strong>${formatCurrency(item.price)}</strong></div>
+          <div>${item.available ? '<span class="pill">Available</span>' : '<span class="pill">Out</span>'}</div>
+          <button class="btn sm">Edit</button>
+          <button class="btn sm danger">Delete</button>
+        `;
+        const [editBtn, delBtn] = row.querySelectorAll("button");
+        editBtn.onclick = () => editMenuItem(item.id);
+        delBtn.onclick = () => deleteMenuItem(item.id);
+        list.appendChild(row);
+      });
+    }
+
+    function addMenuItem(){
+      const name = document.getElementById("itemName").value.trim();
+      const price = +document.getElementById("itemPrice").value;
+      const category = document.getElementById("itemCategory").value;
+      const subcategory = document.getElementById("itemSubcategory").value.trim() || "General";
+      const type = document.getElementById("itemType").value;
+      const spicy = document.getElementById("itemSpicy").value === "true";
+      const code = document.getElementById("itemCode").value.trim();
+      const available = document.getElementById("itemAvailable").checked;
+
+      if(!name || isNaN(price)){
+        alert("Enter valid item name and price.");
+        return;
+      }
+
+      state.menuItems.push({ id: uid(), name, price, category, subcategory, type, spicy, code, available });
+
+      const cat = state.categories.find(c => c.name === category);
+      if(cat && !cat.subcategories.includes(subcategory)) cat.subcategories.push(subcategory);
+
+      ["itemName","itemPrice","itemSubcategory","itemCode"].forEach(id => document.getElementById(id).value = "");
+      document.getElementById("itemAvailable").checked = true;
+      renderAll();
+    }
+
+    function editMenuItem(id){
+      const item = state.menuItems.find(i => i.id === id);
+      if(!item) return;
+      const name = prompt("Edit item name:", item.name);
+      if(name === null) return;
+      const price = prompt("Edit price:", item.price);
+      if(price === null) return;
+      const category = prompt("Edit category:", item.category);
+      if(category === null) return;
+      const subcategory = prompt("Edit subcategory:", item.subcategory || "General");
+      if(subcategory === null) return;
+      const type = prompt("Type (Veg/Non-Veg):", item.type);
+      if(type === null) return;
+      const code = prompt("Item code:", item.code || "");
+      if(code === null) return;
+      const available = confirm("Click OK for Available, Cancel for Out of Stock");
+
+      item.name = name.trim() || item.name;
+      item.price = +price || item.price;
+      item.category = category.trim() || item.category;
+      item.subcategory = subcategory.trim() || item.subcategory;
+      item.type = (type.trim() === "Non-Veg" ? "Non-Veg" : "Veg");
+      item.code = code.trim();
+      item.available = available;
+
+      if(!state.categories.find(c => c.name === item.category)){
+        state.categories.push({ id: uid(), name: item.category, enabled: true, subcategories: [item.subcategory] });
+      }else{
+        const cat = state.categories.find(c => c.name === item.category);
+        if(cat && !cat.subcategories.includes(item.subcategory)) cat.subcategories.push(item.subcategory);
+      }
+
+      state.tables.forEach(t => t.orderItems.forEach(oi => {
+        if(oi.menuItemId === item.id){
+          oi.name = item.name;
+          oi.price = item.price;
+          oi.type = item.type;
+        }
+      }));
+
+      renderAll();
+    }
+
+    function deleteMenuItem(id){
+      const item = state.menuItems.find(i => i.id === id);
+      if(!item) return;
+      if(!confirm(`Delete item "${item.name}"?`)) return;
+      state.menuItems = state.menuItems.filter(i => i.id !== id);
+      state.tables.forEach(t => {
+        t.orderItems = t.orderItems.filter(oi => oi.menuItemId !== id);
+      });
+      renderAll();
+    }
+
+    function renderKitchenTicket(){
+      const box = document.getElementById("kitchenTicket");
+      const table = selectedTable();
+      if(!table){
+        box.innerHTML = "Select a table to preview KOT.";
+        return;
+      }
+      if(!table.orderItems.length){
+        box.innerHTML = `Table ${table.number} has no order yet.`;
+        return;
+      }
+      box.innerHTML = `
+        <div style="font-weight:800;margin-bottom:8px">KOT - Table ${table.number}</div>
+        <div class="muted tiny" style="margin-bottom:8px">${new Date().toLocaleString()}</div>
+        ${table.orderItems.map(i => `
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #334155">
+            <div>
+              <div>${escapeHtml(i.name)}</div>
+              ${i.note ? `<div class="muted tiny">${escapeHtml(i.note)}</div>` : ""}
+            </div>
+            <strong>x${i.qty}</strong>
+          </div>
+        `).join("")}
+      `;
+    }
+
+    function openSettings(){ document.getElementById("settingsOverlay").classList.add("show"); }
+    function closeSettings(){ document.getElementById("settingsOverlay").classList.remove("show"); }
+
+    function escapeHtml(str=""){
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    // EVENTS
+    document.getElementById("openSettingsBtn").onclick = openSettings;
+    document.getElementById("openMenuManagerBtn").onclick = openSettings;
+    document.getElementById("tableSearch").oninput = renderTables;
+    document.getElementById("menuSearch").oninput = renderMenu;
+    document.getElementById("darkModeBtn").onclick = () => {
+      state.settings.darkMode = !state.settings.darkMode;
+      renderAll();
+    };
+
+    document.getElementById("quickAddCustomBtn").onclick = () => {
+      openSettings();
+      document.getElementById("itemName").focus();
+    };
+
+    document.getElementById("toggleServiceTypeBtn").onclick = () => {
+      const table = selectedTable();
+      if(!table) return alert("Select a table first.");
+      table.serviceType = table.serviceType === "Dine-In" ? "Takeaway" : "Dine-In";
+      renderAll();
+    };
+
+    document.getElementById("markBillingBtn").onclick = () => {
+      const table = selectedTable();
+      if(!table) return alert("Select a table first.");
+      if(!table.orderItems.length) return alert("No items added.");
+      table.status = "Billing";
+      renderAll();
+    };
+
+    document.getElementById("taxInput").oninput = e => {
+      const t = selectedTable(); if(!t) return;
+      t.billing.taxPercent = +e.target.value || 0;
+      renderAll();
+    };
+    document.getElementById("packingInput").oninput = e => {
+      const t = selectedTable(); if(!t) return;
+      t.billing.packingCharge = +e.target.value || 0;
+      renderAll();
+    };
+    document.getElementById("discountType").onchange = e => {
+      const t = selectedTable(); if(!t) return;
+      t.billing.discountType = e.target.value;
+      renderAll();
+    };
+    document.getElementById("discountValue").oninput = e => {
+      const t = selectedTable(); if(!t) return;
+      t.billing.discountValue = +e.target.value || 0;
+      renderAll();
+    };
+    document.getElementById("roundOffInput").oninput = e => {
+      const t = selectedTable(); if(!t) return;
+      t.billing.roundOff = +e.target.value || 0;
+      renderAll();
+    };
+    document.getElementById("paymentMethod").onchange = e => {
+      const t = selectedTable(); if(!t) return;
+      t.billing.paymentMethod = e.target.value;
+      renderAll();
+    };
+    document.getElementById("serviceChargeToggle").onchange = e => {
+      const t = selectedTable(); if(!t) return;
+      t.billing.serviceChargeEnabled = e.target.checked;
+      renderAll();
+    };
+    document.getElementById("discountToggle").onchange = e => {
+      const t = selectedTable(); if(!t) return;
+      t.billing.discountEnabled = e.target.checked;
+      renderAll();
+    };
+
+    ["splitCash","splitUpi","splitCard"].forEach(id => {
+      document.getElementById(id).oninput = () => {
+        const t = selectedTable(); if(!t) return;
+        t.billing.split.cash = +document.getElementById("splitCash").value || 0;
+        t.billing.split.upi = +document.getElementById("splitUpi").value || 0;
+        t.billing.split.card = +document.getElementById("splitCard").value || 0;
+        renderAll();
+      };
+    });
+
+    document.getElementById("generateBillBtn").onclick = () => generateBill(false);
+    document.getElementById("printBillBtn").onclick = () => {
+      const t = selectedTable();
+      if(!t) return alert("Select a table first.");
+      if(!t.orderItems.length) return alert("No items in bill.");
+      generateBill(false);
+      window.print();
+    };
+    document.getElementById("saveBillBtn").onclick = () => {
+      generateBill(true);
+      alert("Bill saved.");
+    };
+    document.getElementById("markPaidBtn").onclick = () => {
+      markPaid();
+      alert("Marked as paid.");
+    };
+    document.getElementById("resetTableBtn").onclick = resetTable;
+    document.getElementById("sampleOrderBtn").onclick = duplicateLastOrder;
+    document.getElementById("showTicketBtn").onclick = openSettings;
+
+    // Initialize selected table billing defaults from settings
+    state.tables.forEach(t => {
+      if(t.billing.taxPercent === undefined) t.billing.taxPercent = state.settings.taxPercent;
+      if(t.billing.serviceChargeEnabled === undefined) t.billing.serviceChargeEnabled = state.settings.enableServiceCharge;
+      if(t.billing.discountEnabled === undefined) t.billing.discountEnabled = state.settings.enableDiscount;
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>
