@@ -73,9 +73,15 @@
     .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
     .field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
     .field label{font-size:13px;color:#cbd5e1}
-    .input::placeholder {
-  color: #cbd5e1; /* light white visible */
-}
+  .input, .select, .textarea{
+  width:100%;
+  padding:11px 12px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  outline:none;
+  background:#0b1220;
+  color:#fff;
+   }
     .textarea{min-height:74px;resize:vertical}
     .pill{
       display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:12px;
